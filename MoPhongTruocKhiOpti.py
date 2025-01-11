@@ -2,18 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def hybrid_system_simulation():
-    # Default parameters from the image
-    R0 = 0.01  # Điện trở nội của pin (Ohm)
-    Voc = 3.7  # Điện áp hở mạch của pin (Volt)
-    dung_luong_pin = 100  # Dung lượng pin (Ah)
-    T = 298  # Nhiệt độ (K)
-    gia_nhien_lieu_moi_kwh = 0.1  # Giá nhiên liệu LNG trên mỗi kWh ($)
-    he_so_phat_thai_CO2 = 0.5  # Hệ số phát thải CO2 (kg CO2e mỗi kWh)
-    he_so_phat_thai_NOx = 0.02  # Hệ số phát thải NOx (kg NOx mỗi kWh)
-    so_buoc = 100  # Số bước mô phỏng
-    thoi_gian_moi_buoc = 3600  # Thời gian mỗi bước (giây)
-    soc_start = 1.0  # Trạng thái sạc ban đầu (SOC)
-    soh_start = 1.0  # Trạng thái sức khỏe ban đầu (SOH)
+    # User input for simulation parameters
+    R0 = float(input("Nhập điện trở nội của pin (Ohm): "))
+    Voc = float(input("Nhập điện áp hở mạch của pin (Volt): "))
+    dung_luong_pin = float(input("Nhập dung lượng pin (Ah): "))
+    T = float(input("Nhập nhiệt độ (K): "))
+    gia_nhien_lieu_moi_kwh = float(input("Nhập giá nhiên liệu LNG trên mỗi kWh ($): "))
+    he_so_phat_thai_CO2 = float(input("Nhập hệ số phát thải CO2 (kg CO2e mỗi kWh): "))
+    he_so_phat_thai_NOx = float(input("Nhập hệ số phát thải NOx (kg NOx mỗi kWh): "))
+    so_buoc = int(input("Nhập số bước mô phỏng: "))
+    soc_start = float(input("Nhập trạng thái sạc ban đầu (SOC, từ 0 đến 1): "))
+    soh_start = float(input("Nhập trạng thái sức khỏe ban đầu (SOH, từ 0 đến 1): "))
 
     # Initial conditions
     soc = soc_start
@@ -33,7 +32,7 @@ def hybrid_system_simulation():
 
         # Allocate power between LNG and battery (simple heuristic)
         if soc > 0.2:  # Use battery primarily if SOC > 20%
-            P_pin = min(P_demand * 0.7, soc * dung_luong_pin * Voc / (thoi_gian_moi_buoc / 3600))
+            P_pin = min(P_demand * 0.7, soc * dung_luong_pin * Voc)
             P_LNG = P_demand - P_pin
         else:  # Use LNG primarily if SOC <= 20%
             P_pin = 0
@@ -41,7 +40,7 @@ def hybrid_system_simulation():
 
         # Calculate SOC and SOH changes
         I_pin = P_pin / Voc
-        delta_soc = -I_pin * (thoi_gian_moi_buoc / 3600) / dung_luong_pin
+        delta_soc = -I_pin / dung_luong_pin
         soc += delta_soc
         soc = max(0, min(1, soc))  # Keep SOC in [0, 1]
 
@@ -50,9 +49,9 @@ def hybrid_system_simulation():
         soh = max(0, soh)  # Keep SOH >= 0
 
         # Calculate emissions and cost
-        chi_phi_nhien_lieu = P_LNG * gia_nhien_lieu_moi_kwh * (thoi_gian_moi_buoc / 3600)
-        phat_thai_CO2 = P_LNG * he_so_phat_thai_CO2 * (thoi_gian_moi_buoc / 3600)
-        phat_thai_NOx = P_LNG * he_so_phat_thai_NOx * (thoi_gian_moi_buoc / 3600)
+        chi_phi_nhien_lieu = P_LNG * gia_nhien_lieu_moi_kwh
+        phat_thai_CO2 = P_LNG * he_so_phat_thai_CO2
+        phat_thai_NOx = P_LNG * he_so_phat_thai_NOx
 
         tong_chi_phi += chi_phi_nhien_lieu
         tong_phat_thai_CO2 += phat_thai_CO2
